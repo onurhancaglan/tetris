@@ -1,27 +1,45 @@
-function injectJQuery(game) {
+    "use strict"
+
     // Load the script
     var script = document.createElement("SCRIPT");
 
     script.src = 'https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js';
     script.type = 'text/javascript';
     script.onload = function () {
-        playGame();
+        tetrisGame.createGameArea();
+        tetrisGame.gameObjects.drawToStartPoint('L');
+
+        setInterval(function () {
+            var activeGameObject = $('.square[active="true"]');
+            var gridLineObjects = $('.square[gameobject="gridLine"]');
+            var gameObject_type = activeGameObject.attr('gameObject');
+
+            activeGameObject.css({
+                backgroundColor: tetrisGame.gameObjects[gameObject_type || 'gridLine'].color
+            });
+
+            gridLineObjects.css({
+                backgroundColor: CONSTS.gameBackgroundColor
+            })
+
+            tetrisGame.gameObjects.moveTo(activeGameObject, gameObject_type);
+        }, CONSTS.gameSpeed);
     };
 
     document.getElementsByTagName("head")[0].appendChild(script);
-}
 
-var playGame = function () {
     var CONSTS = {
         // Her bir oyun karesinin kenar uzunluğu ve çerçeve kalınlığı.
         squareSize: 29,
         borderSize: 1,
         // Arenanın her bir kenarının oyun küpleri cinsinden uzunluğu ve genişliği.
-        width: 20,
+        width: 15,
         height: 25,
+        // Oyun hızı
+        gameSpeed: 750,
         // Oyun renkleri
-        colors: {
-            gridLine: 'darkgray',
+        gameBackgroundColor: 'black',
+        gameObjects: {
             I: 'red',
             L: 'blue',
             J: 'yellow',
@@ -32,78 +50,159 @@ var playGame = function () {
         }
     }
 
-    function Square(type, x, y) {
-        this._class = 'square' + ' ' + type;
-        this.style = {
-            border: CONSTS.borderSize / 2 + 'px solid',
-            borderColor: CONSTS.colors[type],
-            height: CONSTS.squareSize,
-            width: CONSTS.squareSize,
-            float: 'left'
-        };
+    var tetrisGame = {
+        Square: function (type, x, y) {
+            this._class = 'square' + ' ' + type;
+            this.type = type;
+            this.style = {
+                border: CONSTS.borderSize / 2 + 'px solid',
+                borderColor: tetrisGame.gameObjects[type].color,
+                height: CONSTS.squareSize,
+                width: CONSTS.squareSize,
+                float: 'left'
+            };
 
-        this._x = x || 0;
-        this._y = y || 0;
-    }
+            this._x = x || 0;
+            this._y = y || 0;
+        },
+        gameObjects: {
+            gridLine: {
+                color: 'darkgray'
+            },
+            I: {
+                color: 'red',
+                startPosition: [{
+                    x: 9,
+                    y: 1
+                }, {
+                    x: 9,
+                    y: 2
+                }, {
+                    x: 9,
+                    y: 3
+                }, {
+                    x: 9,
+                    y: 4
+                }]
+            },
+            L: {
+                color: 'blue',
+                startPosition: [{
+                    x: 9,
+                    y: 1
+                }, {
+                    x: 9,
+                    y: 2
+                }, {
+                    x: 9,
+                    y: 3
+                }, {
+                    x: 10,
+                    y: 3
+                }]
+            },
+            drawToStartPoint: function (type) {
+                var objectToDraw = this[type];
 
-    function draw(type, _class, css, appendTo, x, y) {
-        x = x || 0;
-        y = y || 0;
+                objectToDraw.startPosition.forEach(function (position) {
+                    var squareToFill = tetrisGame.getSquareGivenCoordinate(position.x, position.y);
 
-        $('<' + type + '/>', {
-            class: _class
-        }).css(css).appendTo(appendTo).attr('x', x).attr('y', y);
-    }
+                    squareToFill.attr('filled', true);
+                    squareToFill.attr('gameObject', type);
+                    squareToFill.attr('active', true);
 
-    function createGameArea() {
-        var block = CONSTS.squareSize + CONSTS.borderSize;
+                    squareToFill.css({
+                        backgroundColor: objectToDraw.color
+                    });
+                });
+            },
+            moveTo: function (activeGameObject, gameObject_type) {
+                var squaresPositions = [];
+                var defaultObjectName = 'gridLine';
+                var defaultObject = this[defaultObjectName];
+                var gameObject = this[gameObject_type] || defaultObject;
 
-        draw('div', 'game-area', {
-            background: 'black',
-            position: 'fixed',
-            top: '5%',
-            left: '25%',
-            zIndex: '999',
-            width: block * CONSTS.width,
-            height: block * CONSTS.height
-        }, 'body');
 
-        var x = 0;
-        var y = 0;
+                /** Oyun objesinin bir önceki pozisyonunu array içerisine aldıktan sonra oyun alanını,
+                 * tekrar çizdirmek üzere temizliyorum */
+                for (var square = 0; square < 4; square++) {
+                    var position = {
+                        x: parseInt($(activeGameObject[square]).attr('x')) || 0,
+                        y: parseInt($(activeGameObject[square]).attr('y')) || 0
+                    }
 
-        for (var y = 1; y <= CONSTS.width; y++) {
-            for (var x = 1; x <= CONSTS.height; x++) {
-                var gridSquare = new Square('gridLine', x, y);
+                    squaresPositions.push(position);
 
-                draw('span', gridSquare._class, gridSquare.style, '.game-area', gridSquare._x, gridSquare._y);
+                    var filledSquare = $(activeGameObject[square]);
+
+                    filledSquare.attr('active', false);
+                    filledSquare.attr('filled', false);
+                    filledSquare.attr('gameobject', defaultObjectName);
+
+                    filledSquare.css({
+                        backgroundColor: CONSTS.gameBackgroundColor,
+                        borderColor: defaultObject.color
+                    });
+                }
+
+                // Aktif olan oyun objesini bir önceki pozisyonu baz alarak bir adım ilerletiyorum.
+                for (var coordinate = 0; coordinate < squaresPositions.length; coordinate++) {
+                    var position = squaresPositions[coordinate];
+                    var x = 0;
+                    var y = 0;
+                    console.log(position)
+                    x = position.x;
+                    y = position.y + 1;
+
+                    var emptySquare = $('[x="' + x + '"][y="' + y + '"]');
+
+                    emptySquare.attr('active', true);
+                    emptySquare.attr('filled', true);
+                    emptySquare.attr('gameobject', gameObject_type);
+
+                    emptySquare.css({
+                        backgroundColor: gameObject.color
+                    });
+                }
             }
-        }
-    }
+        },
+        draw: function (type, _class, css, appendTo, x, y, gameObject) {
+            x = x || 0;
+            y = y || 0;
 
-    function getSquareGivenCoordinate(x, y) {
-        return $('.square.gridline[x="' + x + '"][y="' + y + '"]');
-    }
-
-    function createGameObject(type) {
-        if (type === 'I') {
-            getSquareGivenCoordinate().css({
-                backgroundColor: colors[type]
-            });
-
-
-        }
-    }
-
-    createGameArea();
-}
-
-injectJQuery(playGame);
-
-/**    function makeGridLine() {
-        for (var y = 0; y < width; y++) {
-
-            for (x = 0; x < height; x++) {
-                draw('span', 'tetris-arena', )
+            if (_class !== '' && appendTo !== '' && type !== '') {
+                $('<' + type + '/>', {
+                        class: _class
+                    }).css(css)
+                    .appendTo(appendTo)
+                    .attr('x', x)
+                    .attr('y', y)
+                    .attr('gameObject', gameObject);
             }
-        }
-    } */
+        },
+        createGameArea: function () {
+            var block = CONSTS.squareSize + CONSTS.borderSize;
+
+            this.draw('div', 'game-area', {
+                background: CONSTS.gameBackgroundColor,
+                position: 'fixed',
+                top: '5%',
+                left: '25%',
+                zIndex: '999',
+                width: block * CONSTS.width,
+                height: block * CONSTS.height
+            }, 'body');
+
+            for (var y = 1; y <= CONSTS.height; y++) {
+                for (var x = 1; x <= CONSTS.width; x++) {
+                    var gridSquare = new this.Square('gridLine', x, y);
+
+                    this.draw('span', gridSquare._class, gridSquare.style, '.game-area', gridSquare._x, gridSquare._y,
+                        gridSquare.type);
+                }
+            }
+        },
+        getSquareGivenCoordinate: function (x, y) {
+            return $('.square.gridline[x="' + x + '"][y="' + y + '"]');
+        },
+    }
