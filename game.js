@@ -14,11 +14,11 @@ function injectJQuery(game) {
 var playGame = function () {
     var CONSTS = {
         // Her bir oyun karesinin kenar uzunluğu ve çerçeve kalınlığı.
-        squareSize: 14,
+        squareSize: 29,
         borderSize: 1,
         // Arenanın her bir kenarının oyun küpleri cinsinden uzunluğu ve genişliği.
-        width: 15,
-        height: 30,
+        width: 20,
+        height: 25,
         // Oyun renkleri
         colors: {
             gridLine: 'darkgray',
@@ -32,6 +32,19 @@ var playGame = function () {
         }
     }
 
+    function Square(type, x, y) {
+        this._class = 'square' + ' ' + type;
+        this.style = {
+            border: CONSTS.borderSize / 2 + 'px solid',
+            borderColor: CONSTS.colors[type],
+            height: CONSTS.squareSize,
+            width: CONSTS.squareSize,
+            float: 'left'
+        };
+
+        this._x = x || 0;
+        this._y = y || 0;
+    }
 
     function draw(type, _class, css, appendTo, x, y) {
         x = x || 0;
@@ -48,8 +61,8 @@ var playGame = function () {
         draw('div', 'game-area', {
             background: 'black',
             position: 'fixed',
-            top: '10%',
-            left: '40%',
+            top: '5%',
+            left: '25%',
             zIndex: '999',
             width: block * CONSTS.width,
             height: block * CONSTS.height
@@ -58,33 +71,27 @@ var playGame = function () {
         var x = 0;
         var y = 0;
 
-        do {
-            var gridSquare = new Square('gridLine', x, y);
-            console.log(gridSquare)
-            draw('span', gridSquare._class, gridSquare.style, '.game-area', gridSquare._x, gridSquare._y);
+        for (var y = 1; y <= CONSTS.width; y++) {
+            for (var x = 1; x <= CONSTS.height; x++) {
+                var gridSquare = new Square('gridLine', x, y);
 
-            // Eğer satır dolduysa, ikinci satıra geçişte x eksenini baştan başlatıyorum.
-            x = ((x === 15) ? 0 : x++);
-            // Eğer satır dolduysa, ikinci satıra geçişte y ekseninden bir birim aşağı iniyorum.
-            y = (((x % 15 === 0) && x !== 0) ? y++ : y);
-            console.log('a ' + (((x % 15 === 0) && x !== 0) ? y++ : y))
-            console.log(x)
-            console.log(y)
-        } while (y === 29);
+                draw('span', gridSquare._class, gridSquare.style, '.game-area', gridSquare._x, gridSquare._y);
+            }
+        }
     }
 
-    function Square(type, x, y) {
-        this._class = 'square';
-        this.style = {
-            border: CONSTS.borderSize / 2 + 'px solid',
-            borderColor: CONSTS.colors[type],
-            height: CONSTS.squareSize,
-            width: CONSTS.squareSize,
-            float: 'left'
-        };
+    function getSquareGivenCoordinate(x, y) {
+        return $('.square.gridline[x="' + x + '"][y="' + y + '"]');
+    }
 
-        this._x = x || 0;
-        this._y = y || 0;
+    function createGameObject(type) {
+        if (type === 'I') {
+            getSquareGivenCoordinate().css({
+                backgroundColor: colors[type]
+            });
+
+
+        }
     }
 
     createGameArea();
