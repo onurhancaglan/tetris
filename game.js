@@ -235,10 +235,22 @@
                         backgroundColor: gameObject.color
                     });
                 }
-            }
-        },
-        detectCollision: function () {
+            },
+            detectCollision: function (activeGameObject) {
+                var biggest_y = 0;
 
+                $(activeGameObject).map(function (key, square) {
+                    var square_y = parseInt($(square).attr('y'));
+
+                    biggest_y = biggest_y < square_y ? square_y : biggest_y;
+                });
+
+                var bottomSquares = $('[y="' + biggest_y + '"][active="true"]');
+                var nearSquares = [];
+                var isCollide = false;
+
+                bottomSquares.map(function (key, square) {});
+            },
         },
         draw: function (type, _class, css, appendTo, x, y, gameObject) {
             x = x || 0;
