@@ -20,7 +20,7 @@
 
             gridLineObjects.css({
                 backgroundColor: CONSTS.gameBackgroundColor
-            })
+            });
 
             tetrisGame.gameObjects.moveTo(activeGameObject, gameObject_type);
         }, CONSTS.gameSpeed);
