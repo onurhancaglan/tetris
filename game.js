@@ -7,7 +7,7 @@
     script.type = 'text/javascript';
     script.onload = function () {
         tetrisGame.createGameArea();
-        tetrisGame.gameObjects.drawToStartPoint('L');
+        tetrisGame.gameObjects.drawToStartPoint('Z');
 
         setInterval(function () {
             var activeGameObject = $('.square[active="true"]');
@@ -39,15 +39,6 @@
         gameSpeed: 750,
         // Oyun renkleri
         gameBackgroundColor: 'black',
-        gameObjects: {
-            I: 'red',
-            L: 'blue',
-            J: 'yellow',
-            O: 'orange',
-            S: 'purple',
-            T: 'green',
-            Z: 'darkblue'
-        }
     }
 
     var tetrisGame = {
@@ -68,6 +59,86 @@
         gameObjects: {
             gridLine: {
                 color: 'darkgray'
+            },
+            Z: {
+                color: 'darkblue',
+                startPosition: [{
+                    x: 7,
+                    y: 1
+                }, {
+                    x: 8,
+                    y: 1
+                }, {
+                    x: 8,
+                    y: 2
+                }, {
+                    x: 9,
+                    y: 2
+                }]
+            },
+            T: {
+                color: 'green',
+                startPosition: [{
+                    x: 8,
+                    y: 1
+                }, {
+                    x: 7,
+                    y: 2
+                }, {
+                    x: 8,
+                    y: 2
+                }, {
+                    x: 9,
+                    y: 2
+                }]
+            },
+            S: {
+                color: 'purple',
+                startPosition: [{
+                    x: 8,
+                    y: 1
+                }, {
+                    x: 9,
+                    y: 1
+                }, {
+                    x: 7,
+                    y: 2
+                }, {
+                    x: 8,
+                    y: 2
+                }]
+            },
+            O: {
+                color: 'orange',
+                startPosition: [{
+                    x: 8,
+                    y: 1
+                }, {
+                    x: 9,
+                    y: 1
+                }, {
+                    x: 8,
+                    y: 2
+                }, {
+                    x: 9,
+                    y: 2
+                }]
+            },
+            J: {
+                color: 'yellow',
+                startPosition: [{
+                    x: 9,
+                    y: 1
+                }, {
+                    x: 9,
+                    y: 2
+                }, {
+                    x: 9,
+                    y: 3
+                }, {
+                    x: 8,
+                    y: 3
+                }]
             },
             I: {
                 color: 'red',
@@ -150,7 +221,7 @@
                     var position = squaresPositions[coordinate];
                     var x = 0;
                     var y = 0;
-                    console.log(position)
+
                     x = position.x;
                     y = position.y + 1;
 
@@ -165,6 +236,9 @@
                     });
                 }
             }
+        },
+        detectCollision: function () {
+
         },
         draw: function (type, _class, css, appendTo, x, y, gameObject) {
             x = x || 0;
