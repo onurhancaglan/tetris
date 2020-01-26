@@ -29,16 +29,18 @@
                     backgroundColor: CONSTS.gameBackgroundColor
                 });
 
-                if (!tetrisGame.gameObjects.detectBottomCollision()) {
-                    tetrisGame.gameObjects.oneStepForward(tetrisGame.gameObjects.getPositionActiveObject());
+                if (!tetrisGame.gameObjects.detectCollision()) {
+                    tetrisGame.gameObjects.oneStepForward();
                 } else {
                     // eğer yeni obje için yer yoksa oyunu bitir.
                     if (tetrisGame.isOver(CONSTS.activeGameObject_type)) {
-                        console.log('GAME İS OVER')
+                        console.log('GAME IS OVER')
                     } else {
-                        tetrisGame.gameObjects.drawToStartPoint(tetrisGame.gameObjects.getRandomObject());
+                        tetrisGame.gameObjects.drawToStartPoint();
                     }
                 }
+
+                CONSTS.activeGameObject = $('.square[active="true"]');
             }
         }, CONSTS.gameSpeed);
     };
@@ -53,7 +55,7 @@
         width: 15,
         height: 25,
         // Oyun hızı
-        gameSpeed: 500,
+        gameSpeed: 1000,
         // Oyun renkleri
         gameBackgroundColor: 'black',
         // Oyuncu kaybedene kadar true döner.
@@ -61,7 +63,8 @@
         // Aktif olarak hareket eden objenin kareleri
         activeGameObject: null,
         // Aktif olarak hareket eden objenin tipi
-        activeGameObject_type: null
+        activeGameObject_type: null,
+        activeObjectCoordiantes: []
     }
 
     var tetrisGame = {
@@ -230,19 +233,38 @@
                     squareToFill.css({
                         backgroundColor: objectToDraw.color
                     });
+
+                    CONSTS.activeObjectCoordiantes = (objectToDraw || {}).startPosition || [];
                 });
+
+                CONSTS.activeGameObject = $('.square[active="true"]');
             },
-            oneStepForward: function (beforeSquaresPositions, direction) {
+            oneStepForward: function (direction) {
                 // Aktif olan oyun objesini bir önceki pozisyonu baz alarak bir adım ilerletiyorum.
+                this.clearBeforePosition();
+                var newCoordinates = [];
+
                 for (var coordinate = 0; coordinate < 4; coordinate++) {
-                    var position = beforeSquaresPositions[coordinate];
-                    var x = 0;
-                    var y = 0;
+                    var position = CONSTS.activeObjectCoordiantes[coordinate];
 
-                    x = position.x;
-                    y = position.y + 1;
+                    switch (direction) {
+                        case 'left':
+                            position.x = position.x - 1;
+                            break;
+                        case 'right':
+                            position.x = position.x + 1;
+                            break;
+                        default:
+                            position.y = position.y + 1;
+                            break;
+                    }
 
-                    var emptySquare = tetrisGame.getSquareGivenCoordinate(x, y);
+                    newCoordinates.push({
+                        x: position.x,
+                        y: position.y
+                    });
+
+                    var emptySquare = tetrisGame.getSquareGivenCoordinate(position.x, position.y);
 
                     emptySquare.attr('active', true);
                     emptySquare.addClass('filled');
@@ -252,23 +274,9 @@
                         backgroundColor: (this[CONSTS.activeGameObject_type] || {}).color || 'gridLine'
                     });
                 }
-            },
-            getPositionActiveObject: function () {
-                /** Oyun objesinin bir önceki pozisyonunu array içerisine aldıktan sonra oyun alanını,
-                 * tekrar çizdirmek üzere temizliyorum */
-                var squaresPositions = [];
 
-                for (var square = 0; square < 4; square++) {
-                    var position = {
-                        x: parseInt($(CONSTS.activeGameObject[square]).attr('x')) || 0,
-                        y: parseInt($(CONSTS.activeGameObject[square]).attr('y')) || 0
-                    }
-
-                    squaresPositions.push(position);
-                }
-                this.clearBeforePosition();
-
-                return squaresPositions;
+                CONSTS.activeGameObject = $('.square[active="true"]');
+                CONSTS.activeObjectCoordiantes = newCoordinates;
             },
             clearBeforePosition: function () {
                 for (var square = 0; square < 4; square++) {
@@ -285,15 +293,14 @@
                         borderColor: defaultObject.color
                     });
                 }
+
+                CONSTS.activeGameObject = $('.square[active="true"]');
             },
-            detectBottomCollision: function () {
+            detectCollision: function () {
                 var bottomCollided = false;
 
-                $(CONSTS.activeGameObject).map(function (key, square) {
-                    var activeSquare = {
-                        x: parseInt($(square).attr('x')),
-                        y: parseInt($(square).attr('y'))
-                    };
+                $(CONSTS.activeGameObject).map(function (key) {
+                    var activeSquare = CONSTS.activeObjectCoordiantes[key] || {};
                     /** Aktif olan oyun objesinin etrafındaki karelerin, objeinin hala hareket etmesine izin verip
                       vermeyeceğini kontrol ediyorum.*/
                     var _nearSquare = $('[y="' + (activeSquare.y + 1) + '"][x="' + activeSquare.x +
@@ -308,6 +315,8 @@
                     if (bottomCollided) {
                         // Eğer hareket edemeyecekse, aktif durumdan çıkarıyorum.
                         $(CONSTS.activeGameObject).attr('active', false);
+                        CONSTS.activeGameObject = $('.square[active="true"]');
+                        CONSTS.activeObjectCoordiantes = [];
 
                         // Diğer karelere bakmadan döngüden çıkarıyorum.
                         return bottomCollided;
@@ -315,7 +324,7 @@
                 });
 
                 return bottomCollided;
-            },
+            }
         },
         draw: function (type, _class, css, appendTo, x, y, gameObject) {
             x = x || 0;
@@ -345,6 +354,7 @@
 
             if (isOver) {
                 CONSTS.gameState = false;
+                CONSTS.activeObjectCoordiantes = [];
             }
 
             return isOver;
@@ -378,7 +388,6 @@
         events: {
             setEvents: function () {
                 window.addEventListener('keydown', this.onPress);
-                window.addEventListener('keyup', this.onBreak);
             },
             onPress: function (event) {
                 //Disable arrow key on page
@@ -389,20 +398,13 @@
 
                 switch (event.keyCode) {
                     case 37:
+                        tetrisGame.gameObjects.oneStepForward('left');
                         break;
                     case 39:
+                        tetrisGame.gameObjects.oneStepForward('right');
                         break;
                     default:
                         break;
-                }
-            },
-            onBreak: function (event) {
-                if (event.keyCode === 87 || event.keyCode === 83) {
-                    player1.speed = 0;
-                }
-
-                if (event.keyCode === 38 || event.keyCode === 40) {
-                    player2.speed = 0;
                 }
             }
         }
