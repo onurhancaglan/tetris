@@ -240,9 +240,43 @@
                     });
                 });
 
+                /** Aynı anda bir çok eventi kontrol edebilmek ve sınırlamak için her turun sonunda disable ediyorum.
+                 *  Çizdirirken(yani bu fonksyionfa) yeniden aktif ediyorum.*/
+                window.disableArrowButton = false;
+
                 CONSTS.activeGameObject_type = type;
                 CONSTS.activeObjectCoordiantes = (objectToDraw || {}).startPosition || [];
                 CONSTS.activeGameObject = $('.square[active="true"]');
+            },
+            suddenDrop: function () {
+                // space tuşuna basıldığında objeyi mümkün olan en alt konuma indiriyor. 
+                window.disableArrowButton = true;
+                var old_y = [];
+                var newCoordinate = [];
+
+                CONSTS.activeObjectCoordiantes.map(function (coordinate) {
+                    old_y.push(coordinate.y);
+                });
+
+                var biggest_y = old_y.reduce(function (y1, y2) {
+                    return (y1 > y2) ? y1 : y2;
+                });
+                //TODO en yakın .filled bulunacak
+                var near_y = $('[y="' + biggest_y + '"][]')
+                var difference = CONSTS.height - biggest_y;
+
+                old_y = old_y.map(function (y) {
+                    return y + difference;
+                });
+
+                CONSTS.activeObjectCoordiantes.map(function (coordinate, index) {
+                    newCoordinate.push({
+                        x: coordinate.x,
+                        y: old_y[index]
+                    });
+                });
+
+                CONSTS.activeObjectCoordiantes = newCoordinate;
             },
             oneStepForward: function (direction) {
                 // Aktif olan oyun objesini bir önceki pozisyonu baz alarak bir adım ilerletiyorum.
@@ -250,22 +284,32 @@
                 var newCoordinates = [];
 
                 for (var coordinate = 0; coordinate < 4; coordinate++) {
-                    var x, y;
                     var position = CONSTS.activeObjectCoordiantes[coordinate];
+                    var y = position.y;
+                    var x = position.x;
 
-                    switch (direction) {
-                        case 'left':
-                            x = position.x - 1;
-                            y = position.y;
-                            break;
-                        case 'right':
-                            x = position.x + 1;
-                            y = position.y;
-                            break;
-                        default:
-                            y = position.y + 1;
-                            x = position.x;
-                            break;
+                    if (!window.disableArrowButton) {
+                        switch (direction) {
+                            case 'left':
+                                x = position.x - 1;
+                                y = position.y;
+                                break;
+                            case 'right':
+                                x = position.x + 1;
+                                y = position.y;
+                                break;
+                            case 'down':
+                                if (!window.disableDown) {
+                                    console.log('ana girdi lan')
+                                    x = position.x;
+                                    y = position.y + 1;
+                                }
+                                break;
+                            default:
+                                y = position.y + 1;
+                                x = position.x;
+                                break;
+                        }
                     }
 
                     newCoordinates.push({
@@ -326,6 +370,8 @@
                         $(CONSTS.activeGameObject).attr('active', false);
                         // Kordinatları temizliyorum.
                         CONSTS.activeGameObject = [];
+
+                        window.disableArrowButton = true;
                         // Diğer karelere bakmadan döngüden çıkarıyorum.
                         return bottomCollided;
                     }
@@ -448,19 +494,26 @@
                     event.returnValue = false;
                 }
 
-                switch (event.keyCode) {
-                    case 37:
-                        if (!tetrisGame.gameObjects.leftCollision()) {
-                            tetrisGame.gameObjects.oneStepForward('left');
-                        }
-                        break;
-                    case 39:
-                        if (!tetrisGame.gameObjects.rightCollision()) {
-                            tetrisGame.gameObjects.oneStepForward('right');
-                        }
-                        break;
-                    default:
-                        break;
+                if (!window.disableArrowButton) {
+                    switch (event.keyCode) {
+                        case 37:
+                            if (!tetrisGame.gameObjects.leftCollision()) {
+                                tetrisGame.gameObjects.oneStepForward('left');
+                            }
+                            break;
+                        case 39:
+                            if (!tetrisGame.gameObjects.rightCollision()) {
+                                tetrisGame.gameObjects.oneStepForward('right');
+                            }
+                            break;
+                        case 40:
+                            if (!tetrisGame.gameObjects.bottomCollision()) {
+                                tetrisGame.gameObjects.oneStepForward('down');
+                            }
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
         }
