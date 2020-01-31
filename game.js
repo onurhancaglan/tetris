@@ -300,7 +300,12 @@
                                 break;
                             case 'down':
                                 if (!window.disableDown) {
-                                    console.log('ana girdi lan')
+                                    x = position.x;
+                                    y = position.y + 1;
+                                }
+                                break;
+                            case 'suddenDrop':
+                                if (!window.disableDown) {
                                     x = position.x;
                                     y = position.y + 1;
                                 }
