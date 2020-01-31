@@ -251,28 +251,28 @@
             suddenDrop: function () {
                 // space tuşuna basıldığında objeyi mümkün olan en alt konuma indiriyor. 
                 window.disableArrowButton = true;
-                var old_y = [];
+                var object_x = [];
+                var bottom_y = [];
                 var newCoordinate = [];
 
                 CONSTS.activeObjectCoordiantes.map(function (coordinate) {
-                    old_y.push(coordinate.y);
+                    object_x.push(coordinate.x);
                 });
 
-                var biggest_y = old_y.reduce(function (y1, y2) {
-                    return (y1 > y2) ? y1 : y2;
+                object_x.map(function (x) {
+                    bottom_y.push(parseInt($('[x="' + x + '"].filled:not([active="true"])').attr('y')) || CONSTS.height);
                 });
-                //TODO en yakın .filled bulunacak
-                var near_y = $('[y="' + biggest_y + '"][]')
-                var difference = CONSTS.height - biggest_y;
 
-                old_y = old_y.map(function (y) {
-                    return y + difference;
+                var lowest_y = bottom_y.reduce(function (y1, y2) {
+                    return (y1 <= y2) ? y1 : y2;
                 });
+
+                var difference = CONSTS.height - lowest_y;
 
                 CONSTS.activeObjectCoordiantes.map(function (coordinate, index) {
                     newCoordinate.push({
                         x: coordinate.x,
-                        y: old_y[index]
+                        y: coordinate.y + (lowest_y - coordinate.y)
                     });
                 });
 
@@ -489,7 +489,7 @@
             },
             onPress: function (event) {
                 // Oyun kontrollerinin sayfa üzerinde çalışmasını engelliyorum.
-                if (event.keyCode === 38 || event.keyCode === 40) {
+                if (event.keyCode === 38 || event.keyCode === 40 || event.keyCode === 32) {
                     event.cancelBubble = true;
                     event.returnValue = false;
                 }
@@ -510,6 +510,9 @@
                             if (!tetrisGame.gameObjects.bottomCollision()) {
                                 tetrisGame.gameObjects.oneStepForward('down');
                             }
+                            break;
+                        case 32:
+                            tetrisGame.gameObjects.suddenDrop();
                             break;
                         default:
                             break;
