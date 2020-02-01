@@ -58,7 +58,7 @@
         width: 13,
         height: 25,
         // Oyun hızı
-        gameSpeed: 100,
+        gameSpeed: 600,
         // Oyun renkleri
         gameBackgroundColor: 'black',
         // Oyuncu kaybedene kadar true döner.
@@ -283,6 +283,21 @@
                 this.clearBeforePosition();
                 var newCoordinates = [];
 
+                var object_x = [];
+                var bottom_y = [];
+
+                CONSTS.activeObjectCoordiantes.map(function (coordinate) {
+                    object_x.push(coordinate.x);
+                });
+
+                object_x.map(function (x) {
+                    bottom_y.push(parseInt($('[x="' + x + '"].filled:not([active="true"])').attr('y')) || CONSTS.height);
+                });
+
+                var lowest_y = bottom_y.reduce(function (y1, y2) {
+                    return (y1 <= y2) ? y1 : y2;
+                });
+
                 for (var coordinate = 0; coordinate < 4; coordinate++) {
                     var position = CONSTS.activeObjectCoordiantes[coordinate];
                     var y = position.y;
@@ -304,15 +319,9 @@
                                     y = position.y + 1;
                                 }
                                 break;
-                            case 'suddenDrop':
-                                if (!window.disableDown) {
-                                    x = position.x;
-                                    y = position.y + 1;
-                                }
-                                break;
                             default:
-                                y = position.y + 1;
                                 x = position.x;
+                                y = position.y + 1;
                                 break;
                         }
                     }
@@ -321,7 +330,6 @@
                         x: x,
                         y: y
                     });
-
                     // Oyundan yeni kordinatlardaki ve kareleri alıp aktif hale geçirerek oyun objesine çeviriyorum.
                     var emptySquare = tetrisGame.getSquareGivenCoordinate(x, y);
 
@@ -517,7 +525,10 @@
                             }
                             break;
                         case 32:
-                            tetrisGame.gameObjects.suddenDrop();
+                            // Suddenly drop
+                            while (!tetrisGame.gameObjects.bottomCollision()) {
+                                tetrisGame.gameObjects.oneStepForward('down');
+                            }
                             break;
                         default:
                             break;
