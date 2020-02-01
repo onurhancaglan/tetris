@@ -317,6 +317,20 @@
                     });
                 }
             },
+            isNearObjectCollided: function (x, y, controlPosition, axisLimit, controlAxis) {
+                /** Aktif olan oyun objesinin etrafındaki karelerin, objeinin hala hareket etmesine izin verip
+                     vermeyeceğini kontrol ediyorum.*/
+                var _nearSquare = $('[y="' + y + '"][x="' + x + '"]:not([active="true"])');
+                var isCollided = false;
+
+                if (_nearSquare.length > 0 || controlPosition === axisLimit) {
+                    // Altındaki kare dolu mu ya da son kare mi diye bakıyorum.
+                    isCollided = _nearSquare.hasClass('filled') ||
+                        (parseInt(_nearSquare.attr(controlAxis)) || 0) === 0;
+                }
+
+                return isCollided;
+            },
             sideCollision: function (direction) {
                 var isCollided = false;
 
@@ -324,29 +338,25 @@
                     var activeSquare = CONSTS.activeObjectCoordiantes[key] || {};
                     var x = activeSquare.x;
                     var y = activeSquare.y;
-                    var areaCount = 0;
-                    var maxCount = 0;
+                    var axisLimit = 0;
+                    var controlPosition = 0;
 
                     switch (direction) {
                         case 'left':
                             x = x - 1;
-                            maxCount = x;
+                            controlPosition = x;
                             break;
                         case 'right':
-                            maxCount = x;
+                            controlPosition = x;
                             x = x + 1
-                            areaCount = CONSTS.width;
+                            axisLimit = CONSTS.width;
                             break;
                         default:
                             break;
                     }
 
-                    var _nearSquare = $('[y="' + y + '"][x="' + x + '"]:not([active="true"])');
-
-                    if (!isCollided && (_nearSquare.length > 0 || maxCount === areaCount)) {
-                        // Altındaki kare dolu mu ya da son kare mi diye bakıyorum.
-                        isCollided = _nearSquare.hasClass('filled') ||
-                            (parseInt(_nearSquare.attr('x')) || 0) === 0;
+                    if (!isCollided) {
+                        isCollided = tetrisGame.gameObjects.isNearObjectCollided(x, y, controlPosition, axisLimit, 'x');
                     }
                 });
 
@@ -357,15 +367,11 @@
 
                 $(CONSTS.activeGameObject).map(function (key) {
                     var activeSquare = CONSTS.activeObjectCoordiantes[key] || {};
-                    /** Aktif olan oyun objesinin etrafındaki karelerin, objeinin hala hareket etmesine izin verip
-                      vermeyeceğini kontrol ediyorum.*/
-                    var _nearSquare = $('[y="' + (activeSquare.y + 1) + '"][x="' + activeSquare.x +
-                        '"]:not([active="true"])');
+                    var x = activeSquare.x;
+                    var y = activeSquare.y + 1;
 
-                    if (!bottomCollided && (_nearSquare.length > 0 || activeSquare.y + 1 === CONSTS.height)) {
-                        // Altındaki kare dolu mu ya da son kare mi diye bakıyorum.
-                        bottomCollided = _nearSquare.hasClass('filled') ||
-                            (parseInt(_nearSquare.attr('y')) || 0) === 0;
+                    if (!bottomCollided) {
+                        bottomCollided = tetrisGame.gameObjects.isNearObjectCollided(x, y, y, CONSTS.height, 'y');
                     }
 
                     if (bottomCollided) {
@@ -373,8 +379,8 @@
                         $(CONSTS.activeGameObject).attr('active', false);
                         // Kordinatları temizliyorum.
                         CONSTS.activeGameObject = [];
-
                         window.disableArrowButton = true;
+
                         // Diğer karelere bakmadan döngüden çıkarıyorum.
                         return bottomCollided;
                     }
