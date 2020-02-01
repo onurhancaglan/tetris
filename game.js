@@ -6,13 +6,15 @@
     script.src = 'https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js';
     script.type = 'text/javascript';
     script.onload = function () {
+        var nextRandomObject = tetrisGame.gameObjects.getRandomObject();
+
         CONSTS.activeGameObject = $('.square[active="true"]');
         CONSTS.activeGameObject_type = CONSTS.activeGameObject.attr('gameObject');
         CONSTS.gameState = true;
 
         tetrisGame.events.setEvents();
         tetrisGame.createGameArea();
-        tetrisGame.gameObjects.drawToStartPoint(tetrisGame.gameObjects.getRandomObject());
+        tetrisGame.gameObjects.drawToStartPoint(nextRandomObject);
 
         window.tetrisLoop = setInterval(function () {
             if (CONSTS.gameState) {
@@ -65,7 +67,7 @@
         gameState: false,
         // Aktif olarak hareket eden objenin kareleri
         activeGameObject: null,
-        // Aktif olarak hareket eden objenin tipi
+        // Aktif olarak hareket eden objenin tipi ve kordinatlaro
         activeGameObject_type: null,
         activeObjectCoordiantes: []
     }
@@ -291,6 +293,7 @@
                         x: x,
                         y: y
                     });
+
                     // Oyundan yeni kordinatlardaki ve kareleri alıp aktif hale geçirerek oyun objesine çeviriyorum.
                     var emptySquare = tetrisGame.getSquareGivenCoordinate(x, y);
 
@@ -332,6 +335,7 @@
                 return isCollided;
             },
             sideCollision: function (direction) {
+                // Sağ ve sol kısımların çarpışma algılayıcısı
                 var isCollided = false;
 
                 $(CONSTS.activeGameObject).map(function (key) {
@@ -363,6 +367,7 @@
                 return isCollided;
             },
             bottomCollision: function () {
+                // Oyun alt kısmı çarpışma algılayıcısı
                 var bottomCollided = false;
 
                 $(CONSTS.activeGameObject).map(function (key) {
@@ -404,10 +409,70 @@
                     .attr('gameObject', gameObject);
             }
         },
+        winScore: function () {
+            var removedLines = [];
+
+            for (var y = CONSTS.height; y < 1; y--) {
+                var line = $('[y=' + y + '].filled');
+
+                if (line.length === CONSTS.width) {
+                    var defaultObjectName = 'gridLine';
+                    var defaultObject = tetrisGame.gameObjects[defaultObjectName];
+
+                    line.attr('active', false);
+                    line.removeClass('filled');
+                    line.attr('gameobject', defaultObjectName);
+
+                    line.css({
+                        backgroundColor: CONSTS.gameBackgroundColor,
+                        borderColor: defaultObject.color
+                    });
+
+                    removedLines.push(y);
+                }
+            }
+
+            var oldSquares = [];
+
+            $('.filled:not([active="true"])').each(function () {
+                var square = $(this);
+
+                oldSquares.push({
+                    x: parseInt(square.attr('x')),
+                    y: parseInt(square.attr('y')),
+                    type: square.attr('gameobject')
+                });
+
+                var defaultObjectName = 'gridLine';
+                var defaultObject = tetrisGame.gameObjects[defaultObjectName];
+
+                square.attr('active', false);
+                square.removeClass('filled');
+                square.attr('gameobject', defaultObjectName);
+
+                square.css({
+                    backgroundColor: CONSTS.gameBackgroundColor,
+                    borderColor: defaultObject.color
+                });
+            });
+
+            oldSquares.map(function (square) {
+                var squareToFill = tetrisGame.getSquareGivenCoordinate(square.x, square.y + 1);
+
+                squareToFill.attr('active', true);
+                squareToFill.addClass('filled');
+                squareToFill.attr('gameobject', square.type);
+
+                squareElement.css({
+                    backgroundColor: (tetrisGame.gameObjects[square.type] || {}).color
+                });
+            });
+        },
         isOver: function (nextObjectType) {
+            // Oyun kaybetme
             nextObjectType = nextObjectType || 'gridLine';
 
-            var objectToDraw = this.gameObjects[nextObjectType];
+            var objectToDraw = this.gameObjects[nextObjectType] || {};
             var isOver = false;
 
             // Eğer başlangıç noktasında yeni obje için yer yoksa, oyunu bitiriyorum.
@@ -481,7 +546,7 @@
                             }
                             break;
                         case 32:
-                            // Suddenly drop
+                            // Birden aşağı indirme
                             while (!tetrisGame.gameObjects.bottomCollision()) {
                                 tetrisGame.gameObjects.oneStepForward('down');
                             }
