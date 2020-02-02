@@ -41,6 +41,7 @@
                         // eğer yeni obje için yer yoksa oyunu bitir.
                         console.log('GAME IS OVER')
                     } else {
+                        tetrisGame.winScore();
                         tetrisGame.gameObjects.drawToStartPoint(nextObject);
                     }
                 }
@@ -226,12 +227,28 @@
                         return 'gridLine';
                 };
             },
-            convertSquareToActive: function (squareElement, type) {
+            convertSquareDefaultObject: function (squareElement) {
+                var defaultObjectName = 'gridLine';
+                var defaultObject = tetrisGame.gameObjects[defaultObjectName];
+
+                squareElement.removeClass('filled');
+                squareElement.attr('gameobject', defaultObjectName);
+                squareElement.attr('active', false);
+
+                squareElement.css({
+                    backgroundColor: CONSTS.gameBackgroundColor,
+                    borderColor: defaultObject.color
+                });
+            },
+            convertSquareToActive: function (squareElement, type, disableActive) {
                 type = type || CONSTS.activeGameObject_type;
 
                 squareElement.addClass('filled');
                 squareElement.attr('gameObject', type);
-                squareElement.attr('active', true);
+
+                if (!disableActive) {
+                    squareElement.attr('active', true);
+                }
 
                 squareElement.css({
                     backgroundColor: (this[type] || {}).color
@@ -306,18 +323,9 @@
             clearBeforePosition: function () {
                 // Şu aktif olan objeyi oyun alanından temizliyorum.
                 for (var square = 0; square < 4; square++) {
-                    var defaultObjectName = 'gridLine';
-                    var defaultObject = this[defaultObjectName];
                     var activeObject = $(CONSTS.activeGameObject[square]);
 
-                    activeObject.attr('active', false);
-                    activeObject.removeClass('filled');
-                    activeObject.attr('gameobject', defaultObjectName);
-
-                    activeObject.css({
-                        backgroundColor: CONSTS.gameBackgroundColor,
-                        borderColor: defaultObject.color
-                    });
+                    tetrisGame.gameObjects.convertSquareDefaultObject(activeObject);
                 }
             },
             isNearObjectCollided: function (x, y, controlPosition, axisLimit, controlAxis) {
@@ -412,60 +420,38 @@
         winScore: function () {
             var removedLines = [];
 
-            for (var y = CONSTS.height; y < 1; y--) {
+            // En alt sıradan başlayarak tetris olan kordinatları alıyorum ve temizliyorum.
+            for (var y = CONSTS.height; y > 0; y--) {
                 var line = $('[y=' + y + '].filled');
 
                 if (line.length === CONSTS.width) {
-                    var defaultObjectName = 'gridLine';
-                    var defaultObject = tetrisGame.gameObjects[defaultObjectName];
-
-                    line.attr('active', false);
-                    line.removeClass('filled');
-                    line.attr('gameobject', defaultObjectName);
-
-                    line.css({
-                        backgroundColor: CONSTS.gameBackgroundColor,
-                        borderColor: defaultObject.color
-                    });
-
+                    tetrisGame.gameObjects.convertSquareDefaultObject(line);
                     removedLines.push(y);
                 }
             }
 
             var oldSquares = [];
 
+            // Geri kalan tüm dolu karelerin kordinatlarını alip temizliyorum.
             $('.filled:not([active="true"])').each(function () {
                 var square = $(this);
 
-                oldSquares.push({
-                    x: parseInt(square.attr('x')),
-                    y: parseInt(square.attr('y')),
-                    type: square.attr('gameobject')
-                });
+                if (parseInt(square.attr('y')) < removedLines[0]) {
+                    oldSquares.push({
+                        x: parseInt(square.attr('x')),
+                        y: parseInt(square.attr('y')),
+                        type: square.attr('gameobject')
+                    });
 
-                var defaultObjectName = 'gridLine';
-                var defaultObject = tetrisGame.gameObjects[defaultObjectName];
-
-                square.attr('active', false);
-                square.removeClass('filled');
-                square.attr('gameobject', defaultObjectName);
-
-                square.css({
-                    backgroundColor: CONSTS.gameBackgroundColor,
-                    borderColor: defaultObject.color
-                });
+                    tetrisGame.gameObjects.convertSquareDefaultObject(square);
+                }
             });
 
+            // Silinen sıraların üstündeki sıraları bir aşağı indiriyorum
             oldSquares.map(function (square) {
-                var squareToFill = tetrisGame.getSquareGivenCoordinate(square.x, square.y + 1);
+                var squareToFill = tetrisGame.getSquareGivenCoordinate(square.x, square.y + removedLines.length);
 
-                squareToFill.attr('active', true);
-                squareToFill.addClass('filled');
-                squareToFill.attr('gameobject', square.type);
-
-                squareElement.css({
-                    backgroundColor: (tetrisGame.gameObjects[square.type] || {}).color
-                });
+                tetrisGame.gameObjects.convertSquareToActive(squareToFill, square.type, true);
             });
         },
         isOver: function (nextObjectType) {
