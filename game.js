@@ -400,6 +400,65 @@
                 });
 
                 return bottomCollided;
+            },
+            rotate: function () {
+                var center;
+
+                if (CONSTS.activeGameObject_type === 'T') {
+                    center = CONSTS.activeObjectCoordiantes[2];
+                } else if (CONSTS.activeGameObject_type === 'O') {
+                    return false;
+                } else if (CONSTS.activeGameObject_type === 'S') {
+                    center = CONSTS.activeObjectCoordiantes[0];
+                } else {
+                    center = CONSTS.activeObjectCoordiantes[1];
+                }
+
+                var newPositions = [];
+
+                CONSTS.activeObjectCoordiantes.map(function (square) {
+                    var x = square.x - center.x;
+                    var y = square.y - center.y;
+
+                    var t = x;
+
+                    x = -y;
+                    y = t;
+
+                    // translate the block back
+                    x += center.x;
+                    y += center.y;
+
+                    newPositions.push({
+                        x: x,
+                        y: y
+                    });
+                });
+
+                var newPositionIsCollided = false;
+
+                newPositions.map(function (newCoordinate) {
+                    var x = newCoordinate.x;
+                    var y = newCoordinate.y;
+
+                    if (!newPositionIsCollided) {
+                        newPositionIsCollided =
+                            tetrisGame.gameObjects.isNearObjectCollided(x, y, y, CONSTS.height, 'y') || // boottom
+                            (x > 13) || (x <= 0); // right & left
+                    }
+                });
+
+                if (!newPositionIsCollided) {
+                    tetrisGame.gameObjects.convertSquareDefaultObject(CONSTS.activeGameObject);
+
+                    newPositions.map(function (position) {
+                        tetrisGame.gameObjects.convertSquareToActive(
+                            tetrisGame.getSquareGivenCoordinate(position.x, position.y));
+                    });
+
+                    CONSTS.activeGameObject = $('.square[active="true"]');
+                    CONSTS.activeObjectCoordiantes = newPositions;
+                }
             }
         },
         draw: function (type, _class, css, appendTo, x, y, gameObject) {
@@ -530,6 +589,9 @@
                             if (!tetrisGame.gameObjects.bottomCollision()) {
                                 tetrisGame.gameObjects.oneStepForward('down');
                             }
+                            break;
+                        case 38:
+                            tetrisGame.gameObjects.rotate();
                             break;
                         case 32:
                             // Birden aşağı indirme
